@@ -1,0 +1,100 @@
+{% if entries|length > 0 -%}
+{% set lat_default = (entries|first).lat_deg -%}
+{% set lng_default = (entries|first).lng_deg -%}
+{% else -%}
+{% set lat_default = -37.817622 -%}
+{% set lng_default = 144.940205 -%}
+{% endif -%}
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap.native/2.0.15/bootstrap-native-v4.min.js"></script>
+
+    <title>A simple webpage</title>
+
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+		#map {
+            height: 100%;
+            min-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="map-container card my-3">
+            <div class="card-header">Map</div>
+			<div id="map" class="card-body"></div>
+		</div>
+        <div class="data card my-3">
+            <div class="card-header">Data Points</div>
+            <table class="table">
+                <thead>
+					<tr>
+						<th>Session No</th>
+						<th>Time</th>
+						<th>Latitude</th>
+						<th>Longitude</th>
+						<th>Altitude</th>
+						<th>Speed</th>
+						<th>Heading</th>
+					</tr>
+                </thead>
+                {%- for entry in entries %}
+                <tr>
+                    <td>{{ entry.session }}</td>
+                    <td>{{ entry.datetime }}</td>
+                    <td>{{ entry.latitude }}</td>
+                    <td>{{ entry.longitude }}</td>
+                    <td>{{ entry.altitude }}</td>
+                    <td>{{ entry.speed }}</td>
+                    <td>{{ entry.direction }}</td>
+                </tr>
+                {%- endfor %}
+            </table>
+        </div>
+    </div>
+    <script>
+        var map;
+        var polyline;
+        var data = [
+            {%- for e in entries -%}
+            {lat:{{ e.lat_deg }},lng:{{ e.lng_deg }},dir:{{ e.direction[0:-1] }},spd:{{ e.speed -}} }
+            {%- if not loop.last %},{% endif -%}
+            {% endfor -%}
+        ];
+        function initMap() {
+            map = new google.maps.Map(
+                document.getElementById('map'),
+                {
+                    center: {lat: {{ lat_default }}, lng: {{ lng_default }}},
+                    zoom: 14
+                }
+            );
+
+            var lineSymbol = {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
+            };
+
+            var line = new google.maps.Polyline({ path: data, map: map });
+
+            for (var i = 0; i < data.length; i++) {
+                var pos1 = new google.maps.LatLng(data[i].lat, data[i].lng);
+                var pos2 = google.maps.geometry
+                    .spherical.computeOffset(pos1, data[i].spd, data[i].dir);
+
+                var dir_line = new google.maps.Polyline({
+                    path: [pos1, pos2],
+                    icons: [{icon: lineSymbol, offset: '100%'}],
+                    strokeColor: '#aaaaaa',
+                    strokeWeight: 2,
+                    map: map
+                });
+            }
+        }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=geometry&callback=initMap"></script>
+</body>
+</html>
