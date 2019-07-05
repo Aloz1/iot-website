@@ -3,3 +3,4 @@ env
 .venv
 .env
 api_keys.py
+__pycache__
